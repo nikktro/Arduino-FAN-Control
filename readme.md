@@ -1,1 +1,1 @@
-This project was done for remote control fan with wifi. Also it may be control by controller 
+This project was done for remote control fan with wifi. Can also be managed by a controller
