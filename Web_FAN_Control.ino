@@ -113,6 +113,11 @@ void setup(void){
     delay(100);
 
   });
+  server.on("/state", [](){
+    server.send(200, "text/html", state());
+    delay(100);
+
+  });
   server.on("/help", [](){
     server.send(200, "text/html", help());
     delay(100);
@@ -266,10 +271,17 @@ String resume()
   return(web);
 }
 
+String state()
+{
+  String web;
+  web += state;
+  return(web);
+}
+
 String help()
 {
   String web;
-  web += "<p style=\"text-align: center;margin-top: 0px;margin-bottom: 5px;\"><b>Available commands:</b> normal, high, off, temp, pause, resume, help</p>";
+  web += "<p style=\"text-align: center;margin-top: 0px;margin-bottom: 5px;\"><b>Available commands:</b> normal, high, off, temp, pause, resume, state, help</p>";
   web += "<div style=\"text-align:center;margin-top: 20px;\"><a href=\"/\"><button style=\"width:158px;\">Home</button></a></div>";
   return(web);
 }
