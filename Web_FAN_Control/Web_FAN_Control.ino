@@ -103,11 +103,6 @@ void setup(void){
     delay(100);
 
   });
-  server.on("/uptime", [](){
-    server.send(200, "text/html", uptime());
-    delay(100);
-
-  });
   server.on("/pause", [](){
     server.send(200, "text/html", pause());
     delay(100);
@@ -199,6 +194,21 @@ String webPage()
   web += " &#8451;</p>";
   //++++++++++ Temperature  +++++++++++++
 
+  //++++++++++ Uptime  +++++++++++++
+  web += "<p style=\"text-align: center;margin-top: 0px;margin-bottom: 5px;\">Uptime: ";
+  web += Day;
+  web += " Day(s) ";
+  if (Hour < 10) {web += "0";};
+  web += Hour;
+  web += ":";
+  if (Minute < 10) {web += "0";};
+  web += Minute;
+  web += ":";
+  if (Second < 10) {web += "0";};
+  web += Second;
+  web += "</p>";
+  //++++++++++ Uptime  +++++++++++++
+
   //++++++++++ FAN Speed  +++++++++++++
   //web += "<p style=\"text-align: center;margin-top: 0px;margin-bottom: 5px;\">FAN Speed:</p>";
   if (digitalRead(D6_pin) == 0)
@@ -234,38 +244,6 @@ String temp()
   return(web);
 }
 
-String uptime()
-{
-  if(millis()>=3000000000){
-    HighMillis=1;
-  }
-  if(millis()<=100000&&HighMillis==1){
-    Rollover++;
-    HighMillis=0;
-  }
-  long secsUp = millis()/1000;
-  Second = secsUp%60;
-  Minute = (secsUp/60)%60;
-  Hour = (secsUp/(60*60))%24;
-  Day = (Rollover*50)+(secsUp/(60*60*24));
-
-  String web;
-  web += "<p style=\"text-align: center;margin-top: 0px;margin-bottom: 5px;\"><b>Uptime: </b> ";
-  web += Day;
-  web += " Day(s) ";
-  if (Hour < 10) {web += "0";};
-  web += Hour;
-  web += ":";
-  if (Minute < 10) {web += "0";};
-  web += Minute;
-  web += ":";
-  if (Second < 10) {web += "0";};
-  web += Second;
-  web += "</p>";
-  web += "<div style=\"text-align:center;margin-top: 20px;\"><a href=\"/\"><button style=\"width:158px;\">Home</button></a></div>";
-  return(web);
-}
-
 String pause()
 {
   Serial.println("Pause Request");
@@ -291,23 +269,40 @@ String resume()
 String help()
 {
   String web;
-  web += "<p style=\"text-align: center;margin-top: 0px;margin-bottom: 5px;\"><b>Available commands:</b> normal, high, off, temp, uptime, pause, resume, help</p>";
+  web += "<p style=\"text-align: center;margin-top: 0px;margin-bottom: 5px;\"><b>Available commands:</b> normal, high, off, temp, pause, resume, help</p>";
   web += "<div style=\"text-align:center;margin-top: 20px;\"><a href=\"/\"><button style=\"width:158px;\">Home</button></a></div>";
   return(web);
 }
 
 void loop(void){
 
+  //check wifi connection
   if (WiFi.status() != WL_CONNECTED) {
     ConnectWIFI();
   }
 
+  // first run temp poll
   server.handleClient();
   if (refresh == 1) {
     getTemperature();
     refresh = 0;
   }
 
+  //uptime tic
+  if(millis()>=3000000000){
+    HighMillis=1;
+  }
+  if(millis()<=100000&&HighMillis==1){
+    Rollover++;
+    HighMillis=0;
+  }
+  long secsUp = millis()/1000;
+  Second = secsUp%60;
+  Minute = (secsUp/60)%60;
+  Hour = (secsUp/(60*60))%24;
+  Day = (Rollover*50)+(secsUp/(60*60*24));
+
+  //save eeprom
   unsigned long currentMillis = millis();
   if (currentMillis - previousMillis >= interval) {
     //getTemperature();
@@ -323,3 +318,4 @@ void loop(void){
   }
 
 }
+
