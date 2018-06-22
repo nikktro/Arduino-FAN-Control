@@ -10,9 +10,10 @@ MDNSResponder mdns;
 
 // Data wire is plugged into pin D4 GPIO 2
 #define ONE_WIRE_BUS 2
-OneWire oneWire(ONE_WIRE_BUS); 
+OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature DS18B20(&oneWire);
 char temperatureCString[7];
+DeviceAddress insideThermometer;
 
 // VARIABLES
 const char* ssid = "Area53";
@@ -49,13 +50,15 @@ void setup(void){
 
   // begin
   DS18B20.begin();
+  //sensors.setResolution(insideThermometer, 9);
+  sensors.setResolution(insideThermometer, 11);
   EEPROM.begin(4);
   delay(100);
   Serial.begin(115200);
 
   //power restore wait delay
   delay(4000);
-  
+
   //check pervious state from eeprom
   checkState();
 
@@ -66,7 +69,7 @@ void setup(void){
   if (mdns.begin("esp8266", WiFi.localIP())) {
     Serial.println("MDNS responder started");
   }
-  
+
   //set commands
   server.on("/", [](){
     server.send(200, "text/html", webPage());
@@ -77,7 +80,7 @@ void setup(void){
     state=1;
     server.send(200, "text/html", webPage());
     delay(100);
-    
+
   });
   server.on("/high", [](){
     digitalWrite(D5_pin, LOW);
@@ -98,12 +101,22 @@ void setup(void){
   server.on("/temp", [](){
     server.send(200, "text/html", temp());
     delay(100);
-  
+
   });
   server.on("/uptime", [](){
     server.send(200, "text/html", uptime());
     delay(100);
-    
+
+  });
+  server.on("/pause", [](){
+    server.send(200, "text/html", pause());
+    delay(100);
+
+  });
+  server.on("/resume", [](){
+    server.send(200, "text/html", resume());
+    delay(100);
+
   });
   server.begin();
   Serial.println("HTTP server started");
@@ -122,7 +135,7 @@ void ConnectWIFI()
     delay(500);
     Serial.print(".");
   }
-  
+
   Serial.println("");
   Serial.print("Connected to ");
   Serial.println(ssid);
@@ -133,7 +146,7 @@ void ConnectWIFI()
 void getTemperature() {
   float tempC;
   do {
-    DS18B20.requestTemperatures(); 
+    DS18B20.requestTemperatures();
     tempC = DS18B20.getTempCByIndex(0);
     dtostrf(tempC, 2, 1, temperatureCString);
     delay(100);
@@ -151,23 +164,23 @@ void checkState() {
     Serial.println("State OFF");
     digitalWrite(D5_pin, HIGH);
     digitalWrite(D6_pin, HIGH);
-   } 
+   }
   if(state == 1) {
     Serial.println("State Normal");
     digitalWrite(D5_pin, LOW);
     digitalWrite(D6_pin, HIGH);
-   } 
+   }
   if(state == 2) {
     Serial.println("State High");
     digitalWrite(D5_pin, LOW);
     digitalWrite(D6_pin, LOW);
-   } 
+   }
 }
 
 
 String webPage()
-{ 
-  String web; 
+{
+  String web;
   web += "<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/> <meta charset=\"utf-8\"><title>ESP FAN</title><style>button{color:red;padding: 10px 27px;}</style></head>";
   web += "<h1 style=\"text-align: center;font-family: Open sans;font-weight: 100;font-size: 20px;\">FAN Control</h1><div>";
 
@@ -178,30 +191,30 @@ String webPage()
   web += "</b>";
   web += " &#8451;</p>";
   //++++++++++ Temperature  +++++++++++++
- 
+
   //++++++++++ FAN Speed  +++++++++++++
   //web += "<p style=\"text-align: center;margin-top: 0px;margin-bottom: 5px;\">FAN Speed:</p>";
   if (digitalRead(D6_pin) == 0)
   {
     web += "<div style=\"text-align: center;width: 98px;color:white ;padding: 10px 30px;background-color: #0066ff;margin: 0 auto;\">HIGH</div>";
   }
-  else 
+  else
   if (digitalRead(D5_pin) == 0)
   {
     web += "<div style=\"text-align: center;width: 98px;color:white ;padding: 10px 30px;background-color: #43a209;margin: 0 auto;\">NORMAL</div>";
   }
-  else 
+  else
   {
     web += "<div style=\"text-align: center;width: 98px;color:white ;padding: 10px 30px;background-color: #ec1212;margin: 0 auto;\">OFF</div>";
   }
-  
+
   web += "<div style=\"text-align: center;margin: 5px 0px;\"> <a href=\"normal\"><button>NORMAL</button></a>&nbsp;<a href=\"high\"><button>HIGH</button></a><a href=\"off\"><button>OFF</button></a></div>";
   // ++++++++ FAN Speed +++++++++++++
-  
+
   // ========REFRESH=============
   web += "<div style=\"text-align:center;margin-top: 20px;\"><a href=\"/\"><button style=\"width:158px;\">REFRESH</button></a></div>";
   // ========REFRESH=============
-  
+
   web += "</div>";
   return(web);
 }
@@ -216,7 +229,7 @@ String temp()
 
 String uptime()
 {
-  if(millis()>=3000000000){ 
+  if(millis()>=3000000000){
     HighMillis=1;
   }
   if(millis()<=100000&&HighMillis==1){
@@ -228,7 +241,7 @@ String uptime()
   Minute = (secsUp/60)%60;
   Hour = (secsUp/(60*60))%24;
   Day = (Rollover*50)+(secsUp/(60*60*24));
-  
+
   String web;
   web += "<p style=\"text-align: center;margin-top: 0px;margin-bottom: 5px;\"><b>Uptime: </b> ";
   web += Day;
@@ -246,13 +259,24 @@ String uptime()
   return(web);
 }
 
+String pause()
+{
+  digitalWrite(D5_pin, HIGH);
+  digitalWrite(D6_pin, HIGH);
+}
+
+String resume()
+{
+  //check pervious state from eeprom
+  checkState();
+}
 
 void loop(void){
 
   if (WiFi.status() != WL_CONNECTED) {
     ConnectWIFI();
   }
-  
+
   server.handleClient();
   if (refresh == 1) {
     getTemperature();
@@ -260,7 +284,7 @@ void loop(void){
   }
 
   unsigned long currentMillis = millis();
-  if (currentMillis - previousMillis >= interval) { 
+  if (currentMillis - previousMillis >= interval) {
     getTemperature();
     eestate = EEPROM.read(0);
     if (state != eestate) {
@@ -269,9 +293,8 @@ void loop(void){
       Serial.print("Save EEPROM State to ");
       Serial.println(state);
     }
-  
+
     previousMillis = currentMillis;
   }
 
-} 
-
+}
