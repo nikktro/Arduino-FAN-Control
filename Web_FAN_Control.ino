@@ -114,7 +114,7 @@ void setup(void){
 
   });
   server.on("/state", [](){
-    server.send(200, "text/html", state());
+    server.send(200, "text/html", checkState());
     delay(100);
 
   });
@@ -271,7 +271,7 @@ String resume()
   return(web);
 }
 
-String state()
+String checkState()
 {
   String web;
   web += state;
@@ -281,7 +281,7 @@ String state()
 String help()
 {
   String web;
-  web += "<p style=\"text-align: center;margin-top: 0px;margin-bottom: 5px;\"><b>Available commands:</b> normal, high, off, temp, pause, resume, state, help</p>";
+  web += "<p style=\"text-align: center;margin-top: 0px;margin-bottom: 5px;\"><b>Available commands:</b> normal, high, off, temp (current Temperature), pause, resume, state (0-off, 1-normal, 2-high), help</p>";
   web += "<div style=\"text-align:center;margin-top: 20px;\"><a href=\"/\"><button style=\"width:158px;\">Home</button></a></div>";
   return(web);
 }
