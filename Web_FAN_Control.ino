@@ -114,7 +114,7 @@ void setup(void){
 
   });
   server.on("/state", [](){
-    server.send(200, "text/html", checkState());
+    server.send(200, "text/html", checkstate());
     delay(100);
 
   });
@@ -271,7 +271,7 @@ String resume()
   return(web);
 }
 
-String checkState()
+String checkstate()
 {
   String web;
   web += state;
